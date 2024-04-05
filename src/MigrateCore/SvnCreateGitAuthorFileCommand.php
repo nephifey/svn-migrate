@@ -4,20 +4,22 @@ namespace SvnMigrate\MigrateCore;
 
 use Exception;
 use SimpleXMLElement;
+use SvnMigrate\SubProcessExecutorTrait;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
-use Symfony\Component\Process\Exception\ProcessFailedException;
 use Symfony\Component\Process\Process;
 
-class SvnCreateGitAuthorsFileCommand extends Command {
+final class SvnCreateGitAuthorFileCommand extends Command {
+
+	use SubProcessExecutorTrait;
 
     /**
      * {@inheritdoc}
      */
-    protected static $defaultName = "migrate:svn-create-git-authors-file";
+    protected static $defaultName = "migrate:svn-create-git-author-file";
 
     /**
      * {@inheritdoc}
@@ -25,26 +27,17 @@ class SvnCreateGitAuthorsFileCommand extends Command {
     protected static $defaultDescription = "Uses svn to create an authors file for git";
 
     /**
-     * @var Process Svn log process.
-     */
-    private Process $process;
-
-    /**
      * {@inheritdoc}
      * @throws Exception
      */
     protected function execute(InputInterface $input, OutputInterface $output): int {
-        $this->buildSvnLogCommand($input);
-        $exitCode = $this->process->run();
+		$exitCode = $this->executeSubProcess($input, $output);
 
-        if (!$this->process->isSuccessful())
-            throw new ProcessFailedException($this->process);
+		if (self::SUCCESS === $exitCode && !$this->buildAuthorsFile($input)) {
+			$exitCode = self::FAILURE;
+		}
 
-        $this->buildAuthorsFile($input);
-
-        return 0 === $exitCode
-            ? self::SUCCESS
-            : self::FAILURE;
+        return $exitCode;
     }
 
     /**
@@ -52,30 +45,30 @@ class SvnCreateGitAuthorsFileCommand extends Command {
      * @throws Exception
      */
     protected function initialize(InputInterface $input, OutputInterface $output) {
-        if (file_exists($input->getOption("output-file")) && !$input->getOption("override-file"))
-            throw new Exception(sprintf(
-                "The output file \"%s\" already exists. Please choose a different name or add --override-file.",
-                $input->getOption("output-file"),
-            ));
+        if (file_exists($input->getOption("output-file")) && !$input->getOption("override-file")) {
+			throw new Exception(sprintf(
+				"The output file \"%s\" already exists. Use the [--|--author-]override-file option to ignore this error.",
+				$input->getOption("output-file"),
+			));
+		}
     }
 
     /**
      * {@inheritdoc}
      */
     protected function configure() {
-        $this->addArgument("svn-repo-url", InputArgument::OPTIONAL, "The svn repository url to clone");
+        $this->addArgument("svn-repo-url", InputArgument::REQUIRED, "The svn repository url to clone");
         $this->addOption("username", "u", InputOption::VALUE_REQUIRED, "Username for the svn repository authentication");
-        $this->addOption("email", "e", InputOption::VALUE_OPTIONAL, "Email address used for the map", "@company.com");
-        $this->addOption("output-file", null, InputOption::VALUE_OPTIONAL, "The name of the output file", "authors-file.txt");
-        $this->addOption("override-file", null, InputOption::VALUE_NEGATABLE, false);
+        $this->addOption("email", null, InputOption::VALUE_REQUIRED, "Email address used for the map", "@company.com");
+        $this->addOption("output-file", null, InputOption::VALUE_REQUIRED, "The name of the output file", "authors-file.txt");
+        $this->addOption("override-file", null, InputOption::VALUE_NEGATABLE, "If there is a file that exists override it instead of throwing an error", false);
         $this->setAliases(["migrate:author"]);
     }
 
-    /**
-     * @param InputInterface $input
-     * @return void
-     */
-    protected function buildSvnLogCommand(InputInterface $input): void {
+	/**
+	 * {@inheritdoc}
+	 */
+    protected function buildSubProcess(InputInterface $input, OutputInterface $output): Process {
         $cmd = 'svn log --xml --quiet';
         $args = [];
 
@@ -89,19 +82,19 @@ class SvnCreateGitAuthorsFileCommand extends Command {
             $cmd .= ' "${:SVN_REPO_URL}"';
         }
 
-        $this->process = Process::fromShellCommandline($cmd, null, $args, null, null);
+        return Process::fromShellCommandline($cmd, null, $args, null, null);
     }
 
     /**
      * @param InputInterface $input
-     * @return void
+     * @return bool
      * @throws Exception
      */
-    protected function buildAuthorsFile(InputInterface $input): void {
-        if (empty(($output = $this->process->getOutput())))
-            return;
+    protected function buildAuthorsFile(InputInterface $input): bool {
+        if (empty(($output = $this->subProcess->getOutput())))
+            return false;
 
-        try {
+		try {
             $simpleXml = new SimpleXMLElement($output);
 
             if (!isset($simpleXml->logentry))
@@ -122,13 +115,31 @@ class SvnCreateGitAuthorsFileCommand extends Command {
                 $email = $input->getOption("email");
                 $email = $email[0] !== "@" ? "@{$email}" : $email;
                 $fp = fopen($input->getOption("output-file"), "w+");
+
+				if (false === $fp) {
+					throw new Exception(sprintf(
+						"Could not open \"%s\" for writing authors.",
+						$input->getOption("output-file"),
+					));
+				}
+
                 foreach ($authorsMap as $author) {
                     fwrite($fp, "{$author} => {$author} <{$author}{$email}>" . PHP_EOL);
                 }
-                fclose($fp);
+
+				if (false === fclose($fp)) {
+					throw new Exception(sprintf(
+						"Could not close \"%s\" properly.",
+						$input->getOption("output-file")
+					));
+				}
+
+				return true;
             }
         } catch (Exception $e) {
             throw new Exception("Error while parsing the XML: {$e->getMessage()}", $e->getCode(), $e);
         }
+
+		return false;
     }
 }

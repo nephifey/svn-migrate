@@ -1,9 +1,23 @@
 #!/usr/bin/php
 <?php
-require_once dirname(__DIR__) . "/vendor/autoload.php";
+$autoloadFileLoaded = false;
+foreach ([__DIR__ . "/../../../autoload.php", __DIR__ . "/../vendor/autoload.php"] as $file) {
+	if (!file_exists($file))
+        continue;
 
-$application = new \Symfony\Component\Console\Application();
-$application->add(new \SvnMigrate\MigrateCommand());
-$application->add(new \SvnMigrate\MigrateCore\SvnCreateGitAuthorsFileCommand());
-$application->add(new \SvnMigrate\MigrateCore\GitSvnCloneCommand());
+	require_once $file;
+	$autoloadFileLoaded = true;
+	break;
+}
+
+if (!$autoloadFileLoaded) {
+    throw new Exception("The composer autoload file was not found. Run \"composer install\" and try again.");
+}
+
+$application = new \Symfony\Component\Console\Application("svn-migrate", \SvnMigrate\Settings::VERSION);
+$application->addCommands([
+	new \SvnMigrate\MigrateCore\MigrateCoreCommand(),
+	new \SvnMigrate\MigrateCore\SvnCreateGitAuthorFileCommand(),
+	new \SvnMigrate\MigrateCore\GitSvnCloneCommand(),
+]);
 $application->run();
