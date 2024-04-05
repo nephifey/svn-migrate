@@ -12,17 +12,17 @@ use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Process\Exception\ProcessFailedException;
 use Symfony\Component\Process\Process;
 
-class SvnCreateAuthorsFileCommand extends Command {
+class SvnCreateGitAuthorsFileCommand extends Command {
 
     /**
      * {@inheritdoc}
      */
-    protected static $defaultName = "migrate:svn-create-authors-file";
+    protected static $defaultName = "migrate:svn-create-git-authors-file";
 
     /**
      * {@inheritdoc}
      */
-    protected static $defaultDescription = "Uses git-svn to clone a SVN repository into Git repository";
+    protected static $defaultDescription = "Uses svn to create an authors file for git";
 
     /**
      * @var Process Svn log process.
@@ -119,9 +119,10 @@ class SvnCreateAuthorsFileCommand extends Command {
                     unlink($input->getOption("output-file"));
 
                 $email = $input->getOption("email");
+                $email = $email[0] !== "@" ? "@{$email}" : $email;
                 $fp = fopen($input->getOption("output-file"), "w+");
                 foreach ($authorsMap as $author) {
-                    fwrite($fp, "{$author} => {$author}{$email}" . PHP_EOL);
+                    fwrite($fp, "{$author} => {$author} <{$author}{$email}>" . PHP_EOL);
                 }
                 fclose($fp);
             }
