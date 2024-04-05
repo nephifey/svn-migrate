@@ -1,6 +1,6 @@
 <?php
 
-namespace SvnMigrate;
+namespace SvnMigrate\MigrateCore;
 
 use Exception;
 use SimpleXMLElement;
@@ -63,11 +63,12 @@ class SvnCreateGitAuthorsFileCommand extends Command {
      * {@inheritdoc}
      */
     protected function configure() {
-        $this->addArgument("svn-repo-url", InputArgument::OPTIONAL, "The SVN repository URL to clone");
-        $this->addOption("username", "u", InputOption::VALUE_REQUIRED, "Username for the SVN repository authentication");
+        $this->addArgument("svn-repo-url", InputArgument::OPTIONAL, "The svn repository url to clone");
+        $this->addOption("username", "u", InputOption::VALUE_REQUIRED, "Username for the svn repository authentication");
         $this->addOption("email", "e", InputOption::VALUE_OPTIONAL, "Email address used for the map", "@company.com");
         $this->addOption("output-file", null, InputOption::VALUE_OPTIONAL, "The name of the output file", "authors-file.txt");
         $this->addOption("override-file", null, InputOption::VALUE_NEGATABLE, false);
+        $this->setAliases(["migrate:author"]);
     }
 
     /**

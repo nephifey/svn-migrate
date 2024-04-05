@@ -1,6 +1,6 @@
 <?php
 
-namespace SvnMigrate;
+namespace SvnMigrate\MigrateCore;
 
 use Exception;
 use Symfony\Component\Console\Command\Command;
@@ -25,7 +25,7 @@ class GitSvnCloneCommand extends Command {
     /**
      * {@inheritdoc}
      */
-    protected static $defaultDescription = "Uses git-svn to clone a SVN repository into Git repository";
+    protected static $defaultDescription = "Uses git-svn to clone a svn repository into a git repository";
 
     /**
      * @var Process Git svn clone process.
@@ -67,15 +67,16 @@ class GitSvnCloneCommand extends Command {
      * {@inheritdoc}
      */
     protected function configure() {
-        $this->addArgument("svn-repo-url", InputArgument::REQUIRED, "The SVN repository URL to clone");
+        $this->addArgument("svn-repo-url", InputArgument::REQUIRED, "The svn repository url to clone");
         $this->addArgument("output-dest", InputArgument::OPTIONAL, "The output destination for the contents of the clone");
-        $this->addOption("username", "u", InputOption::VALUE_REQUIRED, "Username for the SVN repository authentication");
-        $this->addOption("trunk", "T", InputOption::VALUE_REQUIRED, "The SVN repository trunk path", "/trunk");
-        $this->addOption("tags", "t", InputOption::VALUE_REQUIRED, "The SVN repository trunk path", "/tags");
-        $this->addOption("branches", "b", InputOption::VALUE_REQUIRED, "The SVN repository trunk path", "/branches");
+        $this->addOption("username", "u", InputOption::VALUE_REQUIRED, "Username for the svn repository authentication");
+        $this->addOption("trunk", "T", InputOption::VALUE_REQUIRED, "The svn repository trunk path", "/trunk");
+        $this->addOption("tags", "t", InputOption::VALUE_REQUIRED, "The svn repository trunk path", "/tags");
+        $this->addOption("branches", "b", InputOption::VALUE_REQUIRED, "The svn repository trunk path", "/branches");
         $this->addOption("authors-file", null, InputOption::VALUE_REQUIRED, "The authors file to use for mapping to Git");
         $this->addOption("include-metadata", null, InputOption::VALUE_NEGATABLE, "Includes the git-svn-id, can take significantly longer", false);
         $this->addOption("prefix", null, InputOption::VALUE_REQUIRED, "The prefix which is prepended to the names of remotes");
+        $this->setAliases(["migrate:clone"]);
     }
 
     /**
@@ -93,6 +94,11 @@ class GitSvnCloneCommand extends Command {
 
         if (!$input->getOption("include-metadata")) {
             $cmd .= ' --no-metadata';
+        }
+
+        if (!empty($input->getOption("authors-file"))) {
+            $args["AUTHORS_FILE"] = $input->getOption("authors-file");
+            $cmd .= ' --authors-file="${:AUTHORS_FILE}"';
         }
 
         if (!empty($input->getOption("prefix"))) {

@@ -3,6 +3,7 @@
 require_once dirname(__DIR__) . "/vendor/autoload.php";
 
 $application = new \Symfony\Component\Console\Application();
-$application->add(new \SvnMigrate\SvnCreateGitAuthorsFileCommand());
-$application->add(new \SvnMigrate\GitSvnCloneCommand());
+$application->add(new \SvnMigrate\MigrateCommand());
+$application->add(new \SvnMigrate\MigrateCore\SvnCreateGitAuthorsFileCommand());
+$application->add(new \SvnMigrate\MigrateCore\GitSvnCloneCommand());
 $application->run();
