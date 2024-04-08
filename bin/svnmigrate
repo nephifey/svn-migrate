@@ -14,10 +14,10 @@ if (!$autoloadFileLoaded) {
     throw new Exception("The composer autoload file was not found. Run \"composer install\" and try again.");
 }
 
-$application = new \Symfony\Component\Console\Application("svn-migrate", \SvnMigrate\Settings::VERSION);
+$application = new \Symfony\Component\Console\Application("svn-migrate", \SvnMigrate\MigrateCommand::VERSION);
 $application->addCommands([
-	new \SvnMigrate\MigrateCore\MigrateCoreCommand(),
-	new \SvnMigrate\MigrateCore\SvnCreateGitAuthorFileCommand(),
-	new \SvnMigrate\MigrateCore\GitSvnCloneCommand(),
+	new \SvnMigrate\MigrateCommand(),
+	new \SvnMigrate\Migrate\AuthorCommand(),
+	new \SvnMigrate\Migrate\CloneCommand(),
 ]);
 $application->run();

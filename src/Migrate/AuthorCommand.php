@@ -1,10 +1,9 @@
 <?php
 
-namespace SvnMigrate\MigrateCore;
+namespace SvnMigrate\Migrate;
 
 use Exception;
 use SimpleXMLElement;
-use SvnMigrate\SubProcessExecutorTrait;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -12,14 +11,12 @@ use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Process\Process;
 
-final class SvnCreateGitAuthorFileCommand extends Command {
-
-	use SubProcessExecutorTrait;
+final class AuthorCommand extends Command {
 
     /**
      * {@inheritdoc}
      */
-    protected static $defaultName = "migrate:svn-create-git-author-file";
+    protected static $defaultName = "migrate:author";
 
     /**
      * {@inheritdoc}
@@ -31,9 +28,10 @@ final class SvnCreateGitAuthorFileCommand extends Command {
      * @throws Exception
      */
     protected function execute(InputInterface $input, OutputInterface $output): int {
-		$exitCode = $this->executeSubProcess($input, $output);
+		$process = $this->buildCloneProcess($input, $output);
+		$exitCode = $process->run();
 
-		if (self::SUCCESS === $exitCode && !$this->buildAuthorsFile($input)) {
+		if (self::SUCCESS === $exitCode && !$this->buildAuthorsFile($process, $input)) {
 			$exitCode = self::FAILURE;
 		}
 
@@ -45,12 +43,11 @@ final class SvnCreateGitAuthorFileCommand extends Command {
      * @throws Exception
      */
     protected function initialize(InputInterface $input, OutputInterface $output) {
-        if (file_exists($input->getOption("output-file")) && !$input->getOption("override-file")) {
+        if (file_exists($input->getOption("output-file")) && !$input->getOption("override-file"))
 			throw new Exception(sprintf(
 				"The output file \"%s\" already exists. Use the [--|--author-]override-file option to ignore this error.",
 				$input->getOption("output-file"),
 			));
-		}
     }
 
     /**
@@ -62,13 +59,14 @@ final class SvnCreateGitAuthorFileCommand extends Command {
         $this->addOption("email", null, InputOption::VALUE_REQUIRED, "Email address used for the map", "@company.com");
         $this->addOption("output-file", null, InputOption::VALUE_REQUIRED, "The name of the output file", "authors-file.txt");
         $this->addOption("override-file", null, InputOption::VALUE_NEGATABLE, "If there is a file that exists override it instead of throwing an error", false);
-        $this->setAliases(["migrate:author"]);
     }
 
 	/**
-	 * {@inheritdoc}
+	 * @param InputInterface $input
+	 * @param OutputInterface $output
+	 * @return Process
 	 */
-    protected function buildSubProcess(InputInterface $input, OutputInterface $output): Process {
+    protected function buildCloneProcess(InputInterface $input, OutputInterface $output): Process {
         $cmd = 'svn log --xml --quiet';
         $args = [];
 
@@ -85,13 +83,14 @@ final class SvnCreateGitAuthorFileCommand extends Command {
         return Process::fromShellCommandline($cmd, null, $args, null, null);
     }
 
-    /**
-     * @param InputInterface $input
-     * @return bool
-     * @throws Exception
-     */
-    protected function buildAuthorsFile(InputInterface $input): bool {
-        if (empty(($output = $this->subProcess->getOutput())))
+	/**
+	 * @param Process $process
+	 * @param InputInterface $input
+	 * @return bool
+	 * @throws Exception
+	 */
+    protected function buildAuthorsFile(Process $process, InputInterface $input): bool {
+        if (empty(($output = $process->getOutput())))
             return false;
 
 		try {
@@ -116,23 +115,20 @@ final class SvnCreateGitAuthorFileCommand extends Command {
                 $email = $email[0] !== "@" ? "@{$email}" : $email;
                 $fp = fopen($input->getOption("output-file"), "w+");
 
-				if (false === $fp) {
+				if (false === $fp)
 					throw new Exception(sprintf(
 						"Could not open \"%s\" for writing authors.",
 						$input->getOption("output-file"),
 					));
-				}
 
-                foreach ($authorsMap as $author) {
-                    fwrite($fp, "{$author} => {$author} <{$author}{$email}>" . PHP_EOL);
-                }
+                foreach ($authorsMap as $author)
+					fwrite($fp, "{$author} => {$author} <{$author}{$email}>" . PHP_EOL);
 
-				if (false === fclose($fp)) {
+				if (false === fclose($fp))
 					throw new Exception(sprintf(
 						"Could not close \"%s\" properly.",
 						$input->getOption("output-file")
 					));
-				}
 
 				return true;
             }

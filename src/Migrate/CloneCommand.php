@@ -1,28 +1,26 @@
 <?php
 
-namespace SvnMigrate\MigrateCore;
+namespace SvnMigrate\Migrate;
 
 use Exception;
-use SvnMigrate\SubProcessExecutorTrait;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\Process\Exception\ProcessFailedException;
 use Symfony\Component\Process\Process;
 use Symfony\Component\Validator\Constraints\File;
 use Symfony\Component\Validator\Constraints\Optional;
 use Symfony\Component\Validator\Constraints\Url;
 use Symfony\Component\Validator\Validation;
 
-final class GitSvnCloneCommand extends Command {
-
-	use SubProcessExecutorTrait;
+final class CloneCommand extends Command {
 
     /**
      * {@inheritdoc}
      */
-    protected static $defaultName = "migrate:git-svn-clone";
+    protected static $defaultName = "migrate:clone";
 
     /**
      * {@inheritdoc}
@@ -30,15 +28,20 @@ final class GitSvnCloneCommand extends Command {
     protected static $defaultDescription = "Uses git-svn to clone a svn repository into a git repository";
 
     /**
-     * @var Process Git svn clone process.
-     */
-    private Process $process;
-
-    /**
      * {@inheritdoc}
      */
     protected function execute(InputInterface $input, OutputInterface $output): int {
-        return $this->executeSubProcess($input, $output, [$this, "subProcessOutToCommandOut"]);
+		$callback = function ($type, $data) use ($output) {
+			$output->write($data);
+		};
+
+		$process = $this->buildCloneProcess($input, $output);
+		$exitCode = $process->run($callback);
+
+		if (!$process->isSuccessful())
+			throw new ProcessFailedException($process);
+
+        return $exitCode;
     }
 
     /**
@@ -70,13 +73,14 @@ final class GitSvnCloneCommand extends Command {
         $this->addOption("author-file", null, InputOption::VALUE_REQUIRED, "The authors file to use for mapping to Git");
         $this->addOption("include-metadata", null, InputOption::VALUE_NEGATABLE, "Includes the git-svn-id, can take significantly longer", false);
         $this->addOption("prefix", null, InputOption::VALUE_REQUIRED, "The prefix which is prepended to the names of remotes");
-		$this->setAliases(["migrate:clone"]);
     }
 
 	/**
-	 * {@inheritdoc}
+	 * @param InputInterface $input
+	 * @param OutputInterface $output
+	 * @return Process
 	 */
-	protected function buildSubProcess(InputInterface $input, OutputInterface $output): Process {
+	protected function buildCloneProcess(InputInterface $input, OutputInterface $output): Process {
 		$cmd = 'git svn clone "${:SVN_REPO_URL}" --trunk="${:TRUNK}" --tags="${:TAGS}" --branches="${:BRANCHES}"';
 		$args = [
 			"SVN_REPO_URL" => $input->getArgument("svn-repo-url"),
@@ -94,7 +98,7 @@ final class GitSvnCloneCommand extends Command {
 			$cmd .= ' --authors-file="${:AUTHOR_FILE}"';
 		}
 
-		if (!empty($input->getOption("prefix"))) {
+		if (!is_null($input->getOption("prefix"))) {
 			$args["PREFIX"] = $input->getOption("prefix");
 			$cmd .= ' --prefix="${:PREFIX}"';
 		}
