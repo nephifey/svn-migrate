@@ -25,10 +25,10 @@ final class AuthorCommand extends Command {
 
     /**
      * {@inheritdoc}
-     * @throws Exception
+	 * @throws Exception
      */
     protected function execute(InputInterface $input, OutputInterface $output): int {
-		$process = $this->buildCloneProcess($input, $output);
+		$process = $this->buildAuthorProcess($input);
 		$exitCode = $process->run();
 
 		if (self::SUCCESS === $exitCode && !$this->buildAuthorsFile($process, $input)) {
@@ -63,10 +63,9 @@ final class AuthorCommand extends Command {
 
 	/**
 	 * @param InputInterface $input
-	 * @param OutputInterface $output
 	 * @return Process
 	 */
-    protected function buildCloneProcess(InputInterface $input, OutputInterface $output): Process {
+    protected function buildAuthorProcess(InputInterface $input): Process {
         $cmd = 'svn log --xml --quiet';
         $args = [];
 

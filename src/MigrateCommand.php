@@ -5,6 +5,7 @@ namespace SvnMigrate;
 use Exception;
 use SvnMigrate\Migrate\CloneCommand;
 use SvnMigrate\Migrate\AuthorCommand;
+use SvnMigrate\Migrate\ConvertBranchesCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Input\InputArgument;
@@ -31,16 +32,19 @@ final class MigrateCommand extends Command {
 
     /**
      * {@inheritdoc}
-     * @throws Exception
+	 * @throws Exception
      */
     protected function execute(InputInterface $input, OutputInterface $output): int {
-		if (!$input->getOption("skip-author"))
-			$this->executeSvnCreateGitAuthorFileCommand($input, $output);
-		else
-			$output->writeln("--skip-author flag found, skipping [" . AuthorCommand::getDefaultName() . "] command.");
+		!$input->getOption("skip-author")
+			? $this->executeAuthorCommand($input, $output)
+			: $output->writeln("--skip-author flag found, skipping [" . AuthorCommand::getDefaultName() . "] command.");
 
 		$this->promptAuthorFileLooksCorrect($input, $output);
-		$this->executeGitSvnCloneCommand($input, $output);
+		$this->executeCloneCommand($input, $output);
+
+		!$input->getOption("skip-convert-branches")
+			? $this->executeConvertBranchesCommand($input, $output)
+			: $output->writeln("--skip-convert-branches flag found, skipping [" . ConvertBranchesCommand::getDefaultName() . "] command.");
 
         return self::SUCCESS;
     }
@@ -55,6 +59,8 @@ final class MigrateCommand extends Command {
 
 		// Support [migrate] options.
 		$this->addOption("skip-author", null, InputOption::VALUE_NEGATABLE, "Skip the [migrate:author] command", false);
+		$this->addOption("skip-convert-branches", null, InputOption::VALUE_NEGATABLE, "Skip the [migrate:convert-branches command", false);
+		$this->addOption("skip-convert-tags", null, InputOption::VALUE_NEGATABLE, "Skip the [migrate:convert-tags command", false);
 
 		// Support [author] options.
 		$this->addOption("author-email", null, InputOption::VALUE_REQUIRED, "Email address used for the map", "@company.com");
@@ -101,7 +107,7 @@ final class MigrateCommand extends Command {
 	 * @return void
 	 * @throws Exception
 	 */
-	private function executeSvnCreateGitAuthorFileCommand(InputInterface $input, OutputInterface $output): void {
+	private function executeAuthorCommand(InputInterface $input, OutputInterface $output): void {
 		$arrayInput = [
 			"command" 		  => AuthorCommand::getDefaultName(),
 			"svn-repo-url" 	  => $input->getArgument("svn-repo-url"),
@@ -122,7 +128,7 @@ final class MigrateCommand extends Command {
 	 * @return void
 	 * @throws Exception
 	 */
-	private function executeGitSvnCloneCommand(InputInterface $input, OutputInterface $output): void {
+	private function executeCloneCommand(InputInterface $input, OutputInterface $output): void {
 		$arrayInput = [
 			"command"        	 => CloneCommand::getDefaultName(),
 			"svn-repo-url"   	 => $input->getArgument("svn-repo-url"),
@@ -143,6 +149,24 @@ final class MigrateCommand extends Command {
 			$arrayInput["--prefix"] = $input->getOption("prefix");
 
 		$this->executeSubCommand(new ArrayInput($arrayInput), $output);
+	}
+
+	/**
+	 * @param InputInterface $input
+	 * @param OutputInterface $output
+	 * @return void
+	 * @throws Exception
+	 */
+	private function executeConvertBranchesCommand(InputInterface $input, OutputInterface $output): void {
+		if (empty(($cwd = $input->getArgument("output-dest")))) {
+			$svnRepoUrlParts = explode("/", $input->getArgument("svn-repo-url"));
+			$cwd = end($svnRepoUrlParts);
+		}
+
+		$this->executeSubCommand(new ArrayInput([
+			"command" => ConvertBranchesCommand::getDefaultName(),
+			"cwd"     => $cwd,
+		]), $output);
 	}
 
 	/**

@@ -19,5 +19,7 @@ $application->addCommands([
 	new \SvnMigrate\MigrateCommand(),
 	new \SvnMigrate\Migrate\AuthorCommand(),
 	new \SvnMigrate\Migrate\CloneCommand(),
+    new \SvnMigrate\Migrate\ConvertTagsCommand(),
+    new \SvnMigrate\Migrate\ConvertBranchesCommand(),
 ]);
 $application->run();

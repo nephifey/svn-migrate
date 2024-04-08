@@ -29,13 +29,14 @@ final class CloneCommand extends Command {
 
     /**
      * {@inheritdoc}
+	 * @throws Exception
      */
     protected function execute(InputInterface $input, OutputInterface $output): int {
 		$callback = function ($type, $data) use ($output) {
 			$output->write($data);
 		};
 
-		$process = $this->buildCloneProcess($input, $output);
+		$process = $this->buildCloneProcess($input);
 		$exitCode = $process->run($callback);
 
 		if (!$process->isSuccessful())
@@ -77,10 +78,9 @@ final class CloneCommand extends Command {
 
 	/**
 	 * @param InputInterface $input
-	 * @param OutputInterface $output
 	 * @return Process
 	 */
-	protected function buildCloneProcess(InputInterface $input, OutputInterface $output): Process {
+	protected function buildCloneProcess(InputInterface $input): Process {
 		$cmd = 'git svn clone "${:SVN_REPO_URL}" --trunk="${:TRUNK}" --tags="${:TAGS}" --branches="${:BRANCHES}"';
 		$args = [
 			"SVN_REPO_URL" => $input->getArgument("svn-repo-url"),
