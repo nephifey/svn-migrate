@@ -24,6 +24,6 @@
     }
   },
   "bin": [
-    "bin/console"
+    "bin/svnmigrate"
   ]
 }
