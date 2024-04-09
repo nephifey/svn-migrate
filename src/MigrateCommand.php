@@ -25,7 +25,7 @@ use Throwable;
 
 final class MigrateCommand extends Command {
 
-	public const VERSION = "v1.0.0-alpha";
+	public const VERSION = "v1.0.2-alpha";
 
     /**
      * {@inheritdoc}
