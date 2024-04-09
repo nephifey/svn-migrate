@@ -216,11 +216,15 @@ final class MigrateCommand extends Command {
      * @throws Exception
      */
     private function executeConvertTagsCommand(InputInterface $input, OutputInterface $output): void {
-        $this->executeSubCommand(new ArrayInput([
+        $arrayInput = [
             "command"  => ConvertTagsCommand::getDefaultName(),
             "cwd"      => $this->getCloneCwd($input),
-            "--prefix" => $input->getOption("prefix"),
-        ]), $output);
+        ];
+
+        if (!is_null($input->getOption("prefix")))
+            $arrayInput["--prefix"] = $input->getOption("prefix");
+
+        $this->executeSubCommand(new ArrayInput($arrayInput), $output);
     }
 
 	/**
@@ -230,11 +234,15 @@ final class MigrateCommand extends Command {
 	 * @throws Exception
 	 */
 	private function executeConvertBranchesCommand(InputInterface $input, OutputInterface $output): void {
-		$this->executeSubCommand(new ArrayInput([
-			"command"  => ConvertBranchesCommand::getDefaultName(),
-			"cwd"      => $this->getCloneCwd($input),
-            "--prefix" => $input->getOption("prefix"),
-		]), $output);
+        $arrayInput = [
+            "command"  => ConvertTagsCommand::getDefaultName(),
+            "cwd"      => $this->getCloneCwd($input),
+        ];
+
+        if (!is_null($input->getOption("prefix")))
+            $arrayInput["--prefix"] = $input->getOption("prefix");
+
+		$this->executeSubCommand(new ArrayInput($arrayInput), $output);
 	}
 
 	/**
