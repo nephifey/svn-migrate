@@ -15,11 +15,17 @@ use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Question\ConfirmationQuestion;
 use Symfony\Component\Console\Question\Question;
+use Symfony\Component\Process\Exception\ProcessFailedException;
+use Symfony\Component\Process\Process;
+use Symfony\Component\Validator\Constraints\File;
+use Symfony\Component\Validator\Constraints\Optional;
+use Symfony\Component\Validator\Constraints\Url;
+use Symfony\Component\Validator\Validation;
 use Throwable;
 
 final class MigrateCommand extends Command {
 
-	public const VERSION = "1.0.0";
+	public const VERSION = "v1.0.0-alpha";
 
     /**
      * {@inheritdoc}
@@ -51,7 +57,21 @@ final class MigrateCommand extends Command {
 			? $this->executeConvertBranchesCommand($input, $output)
 			: $output->writeln("--skip-convert-branches flag found, skipping [" . ConvertBranchesCommand::getDefaultName() . "] command.");
 
+        $this->deleteDupeTrunk($input, $output);
+
         return self::SUCCESS;
+    }
+
+    /**
+     * {@inheritDoc}
+     * @throws Exception
+     */
+    protected function initialize(InputInterface $input, OutputInterface $output) {
+        $validator = Validation::createValidator();
+
+        $violations = $validator->validate($input->getArgument("svn-repo-url"), [new Url()]);
+        if (0 !== count($violations))
+            throw new Exception($violations[0]);
     }
 
     /**
@@ -81,6 +101,19 @@ final class MigrateCommand extends Command {
 		$this->addOption("prefix", null, InputOption::VALUE_REQUIRED, "The prefix which is prepended to the names of remotes");
     }
 
+    /**
+     * @param InputInterface $input
+     * @return string
+     */
+    private function getCloneCwd(InputInterface $input): string {
+        if (empty(($cwd = $input->getArgument("output-dest")))) {
+            $svnRepoUrlParts = explode("/", $input->getArgument("svn-repo-url"));
+            $cwd = end($svnRepoUrlParts);
+        }
+
+        return $cwd;
+    }
+
 	/**
 	 * @param InputInterface $input
 	 * @param OutputInterface $output
@@ -105,6 +138,26 @@ final class MigrateCommand extends Command {
 			),
 		);
 	}
+
+    /**
+     * @param InputInterface $input
+     * @param OutputInterface $output
+     * @return void
+     */
+    private function deleteDupeTrunk(InputInterface $input, OutputInterface $output): void {
+        ($process = Process::fromShellCommandline(
+            'git branch -d "${:PREFIX}"trunk',
+            $this->getCloneCwd($input),
+            ["PREFIX" => $input->getOption("prefix") ?? "origin/"],
+            null,
+            null,
+        ))->run();
+
+        if (!$process->isSuccessful())
+            throw new ProcessFailedException($process);
+        else if (!empty(($rtlProcessOutput = $process->getOutput())))
+            $output->write($rtlProcessOutput);
+    }
 
 	/**
 	 * @param InputInterface $input
@@ -163,14 +216,9 @@ final class MigrateCommand extends Command {
      * @throws Exception
      */
     private function executeConvertTagsCommand(InputInterface $input, OutputInterface $output): void {
-        if (empty(($cwd = $input->getArgument("output-dest")))) {
-            $svnRepoUrlParts = explode("/", $input->getArgument("svn-repo-url"));
-            $cwd = end($svnRepoUrlParts);
-        }
-
         $this->executeSubCommand(new ArrayInput([
             "command"  => ConvertTagsCommand::getDefaultName(),
-            "cwd"      => $cwd,
+            "cwd"      => $this->getCloneCwd($input),
             "--prefix" => $input->getOption("prefix"),
         ]), $output);
     }
@@ -182,14 +230,9 @@ final class MigrateCommand extends Command {
 	 * @throws Exception
 	 */
 	private function executeConvertBranchesCommand(InputInterface $input, OutputInterface $output): void {
-		if (empty(($cwd = $input->getArgument("output-dest")))) {
-			$svnRepoUrlParts = explode("/", $input->getArgument("svn-repo-url"));
-			$cwd = end($svnRepoUrlParts);
-		}
-
 		$this->executeSubCommand(new ArrayInput([
 			"command"  => ConvertBranchesCommand::getDefaultName(),
-			"cwd"      => $cwd,
+			"cwd"      => $this->getCloneCwd($input),
             "--prefix" => $input->getOption("prefix"),
 		]), $output);
 	}

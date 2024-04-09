@@ -10,6 +10,8 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Process\Process;
+use Symfony\Component\Validator\Constraints\Url;
+use Symfony\Component\Validator\Validation;
 
 final class AuthorCommand extends Command {
 
@@ -42,6 +44,12 @@ final class AuthorCommand extends Command {
      * @throws Exception
      */
     protected function initialize(InputInterface $input, OutputInterface $output) {
+        $validator = Validation::createValidator();
+
+        $violations = $validator->validate($input->getArgument("svn-repo-url"), [new Url()]);
+        if (0 !== count($violations))
+            throw new Exception($violations[0]);
+
         if (file_exists($input->getOption("output-file")) && !$input->getOption("override-file"))
 			throw new Exception(sprintf(
 				"The output file \"%s\" already exists. Use the [--|--author-]override-file option to ignore this error.",
