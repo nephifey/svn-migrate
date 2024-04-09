@@ -60,7 +60,7 @@ final class ConvertBranchesCommand extends Command {
             $input->getArgument("cwd"),
             $args,
             null,
-            null
+            null,
         );
 	}
 
@@ -75,7 +75,7 @@ final class ConvertBranchesCommand extends Command {
             $input->getArgument("cwd"),
             ["REMOTE" => $remote],
             null,
-            null
+            null,
         );
 	 }
 
@@ -90,7 +90,7 @@ final class ConvertBranchesCommand extends Command {
             $input->getArgument("cwd"),
             ["REMOTE" => $remote],
             null,
-            null
+            null,
         );
 	}
 }
