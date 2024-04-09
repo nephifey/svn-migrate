@@ -83,9 +83,9 @@ final class MigrateCommand extends Command {
 		$this->addOption("username", "u", InputOption::VALUE_REQUIRED, "Username for the svn repository authentication");
 
 		// Support [migrate] options.
-		$this->addOption("skip-author", null, InputOption::VALUE_NEGATABLE, "Skip the [migrate:author] command", false);
-		$this->addOption("skip-convert-branches", null, InputOption::VALUE_NEGATABLE, "Skip the [migrate:convert-branches command", false);
-		$this->addOption("skip-convert-tags", null, InputOption::VALUE_NEGATABLE, "Skip the [migrate:convert-tags command", false);
+		$this->addOption("skip-author", null, InputOption::VALUE_NEGATABLE, "Skip the [" . AuthorCommand::getDefaultName() . "] command", false);
+        $this->addOption("skip-convert-tags", null, InputOption::VALUE_NEGATABLE, "Skip the [" . ConvertTagsCommand::getDefaultName() . "] command", false);
+		$this->addOption("skip-convert-branches", null, InputOption::VALUE_NEGATABLE, "Skip the [" . ConvertBranchesCommand::getDefaultName() . "] command", false);
 
 		// Support [author] options.
 		$this->addOption("author-email", null, InputOption::VALUE_REQUIRED, "Email address used for the map", "@company.com");
@@ -235,7 +235,7 @@ final class MigrateCommand extends Command {
 	 */
 	private function executeConvertBranchesCommand(InputInterface $input, OutputInterface $output): void {
         $arrayInput = [
-            "command"  => ConvertTagsCommand::getDefaultName(),
+            "command"  => ConvertBranchesCommand::getDefaultName(),
             "cwd"      => $this->getCloneCwd($input),
         ];
 
