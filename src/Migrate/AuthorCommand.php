@@ -31,9 +31,8 @@ final class AuthorCommand extends Command {
 		$process = $this->buildAuthorProcess($input);
 		$exitCode = $process->run();
 
-		if (self::SUCCESS === $exitCode && !$this->buildAuthorsFile($process, $input)) {
-			$exitCode = self::FAILURE;
-		}
+		if (self::SUCCESS === $exitCode && !$this->buildAuthorsFile($process, $input))
+            $exitCode = self::FAILURE;
 
         return $exitCode;
     }
@@ -96,11 +95,11 @@ final class AuthorCommand extends Command {
             $simpleXml = new SimpleXMLElement($output);
 
             if (!isset($simpleXml->logentry))
-                throw new Exception("No 'logentry' element found.");
+                throw new Exception("No \"logentry\" element found.");
 
             foreach ($simpleXml->logentry as $logEntry) {
                 if (!isset($logEntry->author))
-                    throw new Exception("No 'author' element found.");
+                    throw new Exception("No \"author\" element found.");
 
                 if (!isset($authorsMap[(string) $logEntry->author]))
                     $authorsMap[(string) $logEntry->author] = (string) $logEntry->author;

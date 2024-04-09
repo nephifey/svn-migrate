@@ -89,9 +89,8 @@ final class CloneCommand extends Command {
 			"BRANCHES"     => $input->getOption("branches"),
 		];
 
-		if (!$input->getOption("include-metadata")) {
-			$cmd .= ' --no-metadata';
-		}
+		if (!$input->getOption("include-metadata"))
+            $cmd .= ' --no-metadata';
 
 		if (!empty($input->getOption("author-file"))) {
 			$args["AUTHOR_FILE"] = $input->getOption("author-file");

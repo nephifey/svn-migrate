@@ -6,6 +6,7 @@ use Exception;
 use SvnMigrate\Migrate\CloneCommand;
 use SvnMigrate\Migrate\AuthorCommand;
 use SvnMigrate\Migrate\ConvertBranchesCommand;
+use SvnMigrate\Migrate\ConvertTagsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Input\InputArgument;
@@ -41,6 +42,10 @@ final class MigrateCommand extends Command {
 
 		$this->promptAuthorFileLooksCorrect($input, $output);
 		$this->executeCloneCommand($input, $output);
+
+        !$input->getOption("skip-convert-tags")
+            ? $this->executeConvertTagsCommand($input, $output)
+            : $output->writeln("--skip-convert-tags flag found, skipping [" . ConvertTagsCommand::getDefaultName() . "] command.");
 
 		!$input->getOption("skip-convert-branches")
 			? $this->executeConvertBranchesCommand($input, $output)
@@ -113,7 +118,7 @@ final class MigrateCommand extends Command {
 			"svn-repo-url" 	  => $input->getArgument("svn-repo-url"),
 			"--email"  	  	  => $input->getOption("author-email"),
 			"--output-file"   => $input->getOption("author-output-file"),
-			"--override-file" => $input->getOption("author-override-file")
+			"--override-file" => $input->getOption("author-override-file"),
 		];
 
 		if (!empty($input->getOption("username")))
@@ -151,6 +156,25 @@ final class MigrateCommand extends Command {
 		$this->executeSubCommand(new ArrayInput($arrayInput), $output);
 	}
 
+    /**
+     * @param InputInterface $input
+     * @param OutputInterface $output
+     * @return void
+     * @throws Exception
+     */
+    private function executeConvertTagsCommand(InputInterface $input, OutputInterface $output): void {
+        if (empty(($cwd = $input->getArgument("output-dest")))) {
+            $svnRepoUrlParts = explode("/", $input->getArgument("svn-repo-url"));
+            $cwd = end($svnRepoUrlParts);
+        }
+
+        $this->executeSubCommand(new ArrayInput([
+            "command"  => ConvertTagsCommand::getDefaultName(),
+            "cwd"      => $cwd,
+            "--prefix" => $input->getOption("prefix"),
+        ]), $output);
+    }
+
 	/**
 	 * @param InputInterface $input
 	 * @param OutputInterface $output
@@ -164,8 +188,9 @@ final class MigrateCommand extends Command {
 		}
 
 		$this->executeSubCommand(new ArrayInput([
-			"command" => ConvertBranchesCommand::getDefaultName(),
-			"cwd"     => $cwd,
+			"command"  => ConvertBranchesCommand::getDefaultName(),
+			"cwd"      => $cwd,
+            "--prefix" => $input->getOption("prefix"),
 		]), $output);
 	}
 
