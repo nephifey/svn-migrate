@@ -69,27 +69,24 @@ final class AuthorCommand extends Command {
     }
 
 	/**
+     * Builds the process for fetching authors.
 	 * @param InputInterface $input
 	 * @return Process
 	 */
     protected function buildAuthorProcess(InputInterface $input): Process {
-        $cmd = 'svn log --xml --quiet';
-        $args = [];
+        $cmd = 'svn log "${:SVN_REPO_URL}" --xml --quiet';
+        $args = ["SVN_REPO_URL" => $input->getArgument("svn-repo-url")];
 
         if (!empty($input->getOption("username"))) {
             $args["USERNAME"] = $input->getOption("username");
             $cmd .= ' --username="${:USERNAME}"';
         }
 
-        if (!empty($input->getArgument("svn-repo-url"))) {
-            $args["SVN_REPO_URL"] = $input->getArgument("svn-repo-url");
-            $cmd .= ' "${:SVN_REPO_URL}"';
-        }
-
         return Process::fromShellCommandline($cmd, null, $args, null, null);
     }
 
 	/**
+     * Attempts to build an author file based on the author process output.
 	 * @param Process $process
 	 * @param InputInterface $input
 	 * @return bool

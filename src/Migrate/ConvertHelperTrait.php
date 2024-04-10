@@ -11,12 +11,14 @@ use Symfony\Component\Process\Process;
 trait ConvertHelperTrait {
 
     /**
+     * Builds the process for fetching remote refs.
      * @param InputInterface $input
      * @return Process
      */
     abstract protected function buildRemotesProcess(InputInterface $input): Process;
 
     /**
+     * Builds the process for the remote ref to local.
      * @param InputInterface $input
      * @param string $remote
      * @return Process
@@ -24,6 +26,7 @@ trait ConvertHelperTrait {
     abstract protected function buildRemoteToLocalProcess(InputInterface $input, string $remote): Process;
 
     /**
+     * Builds the process for the remote ref deletion.
      * @param InputInterface $input
      * @param string $remote
      * @return Process

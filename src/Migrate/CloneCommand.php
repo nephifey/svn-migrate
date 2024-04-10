@@ -73,7 +73,7 @@ final class CloneCommand extends Command {
         $this->addOption("branches", null, InputOption::VALUE_REQUIRED, "The svn repository trunk path", "/branches");
         $this->addOption("author-file", null, InputOption::VALUE_REQUIRED, "The authors file to use for mapping to Git");
         $this->addOption("include-metadata", null, InputOption::VALUE_NEGATABLE, "Includes the git-svn-id, can take significantly longer", false);
-        $this->addOption("prefix", null, InputOption::VALUE_REQUIRED, "The prefix which is prepended to the names of remotes");
+        $this->addOption("prefix", null, InputOption::VALUE_REQUIRED, "The prefix which is prepended to the names of remotes", "origin/");
     }
 
 	/**
@@ -81,12 +81,13 @@ final class CloneCommand extends Command {
 	 * @return Process
 	 */
 	protected function buildCloneProcess(InputInterface $input): Process {
-		$cmd = 'git svn clone "${:SVN_REPO_URL}" --trunk="${:TRUNK}" --tags="${:TAGS}" --branches="${:BRANCHES}"';
+		$cmd = 'git svn clone "${:SVN_REPO_URL}" --trunk="${:TRUNK}" --tags="${:TAGS}" --branches="${:BRANCHES}" --prefix="${:PREFIX}"';
 		$args = [
 			"SVN_REPO_URL" => $input->getArgument("svn-repo-url"),
 			"TRUNK"        => $input->getOption("trunk"),
 			"TAGS"         => $input->getOption("tags"),
 			"BRANCHES"     => $input->getOption("branches"),
+            "PREFIX"       => $input->getOption("prefix"),
 		];
 
 		if (!$input->getOption("include-metadata"))
@@ -95,11 +96,6 @@ final class CloneCommand extends Command {
 		if (!empty($input->getOption("author-file"))) {
 			$args["AUTHOR_FILE"] = $input->getOption("author-file");
 			$cmd .= ' --authors-file="${:AUTHOR_FILE}"';
-		}
-
-		if (!is_null($input->getOption("prefix"))) {
-			$args["PREFIX"] = $input->getOption("prefix");
-			$cmd .= ' --prefix="${:PREFIX}"';
 		}
 
 		if (!empty($input->getOption("username"))) {
