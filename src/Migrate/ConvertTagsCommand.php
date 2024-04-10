@@ -8,7 +8,6 @@ use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
-use Symfony\Component\Process\Exception\ProcessFailedException;
 use Symfony\Component\Process\Process;
 
 final class ConvertTagsCommand extends Command {
@@ -46,10 +45,9 @@ final class ConvertTagsCommand extends Command {
         $this->addOption("tags", null, InputOption::VALUE_REQUIRED, "The svn repository trunk path", "/tags");
     }
 
-	/**
-	 * @param InputInterface $input
-	 * @return Process
-	 */
+    /**
+     * {@inheritdoc}
+     */
     protected function buildRemotesProcess(InputInterface $input): Process {
 		$args = [
             "FORMAT" => "%(refname:short)",
@@ -66,9 +64,7 @@ final class ConvertTagsCommand extends Command {
 	}
 
     /**
-     * @param InputInterface $input
-     * @param string $remote
-     * @return Process
+     * {@inheritdoc}
      */
     protected function buildRemoteToLocalProcess(InputInterface $input, string $remote): Process {
         $tag = str_replace($input->getOption("prefix"), "", $remote);
@@ -90,9 +86,7 @@ final class ConvertTagsCommand extends Command {
     }
 
     /**
-     * @param InputInterface $input
-     * @param string $remote
-     * @return Process
+     * {@inheritdoc}
      */
     protected function buildDeleteRemoteProcess(InputInterface $input, string $remote): Process {
         return Process::fromShellCommandline(

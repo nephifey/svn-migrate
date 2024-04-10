@@ -17,15 +17,13 @@ use Symfony\Component\Console\Question\ConfirmationQuestion;
 use Symfony\Component\Console\Question\Question;
 use Symfony\Component\Process\Exception\ProcessFailedException;
 use Symfony\Component\Process\Process;
-use Symfony\Component\Validator\Constraints\File;
-use Symfony\Component\Validator\Constraints\Optional;
 use Symfony\Component\Validator\Constraints\Url;
 use Symfony\Component\Validator\Validation;
 use Throwable;
 
 final class MigrateCommand extends Command {
 
-	public const VERSION = "v1.0.2-alpha";
+	public const VERSION = "v1.0.3-alpha";
 
     /**
      * {@inheritdoc}
@@ -98,7 +96,7 @@ final class MigrateCommand extends Command {
 		$this->addOption("tags", null, InputOption::VALUE_REQUIRED, "The svn repository trunk path", "/tags");
 		$this->addOption("branches", null, InputOption::VALUE_REQUIRED, "The svn repository trunk path", "/branches");
 		$this->addOption("include-metadata", null, InputOption::VALUE_NEGATABLE, "Includes the git-svn-id, can take significantly longer", false);
-		$this->addOption("prefix", null, InputOption::VALUE_REQUIRED, "The prefix which is prepended to the names of remotes");
+		$this->addOption("prefix", null, InputOption::VALUE_REQUIRED, "The prefix which is prepended to the names of remotes", "origin/");
     }
 
     /**
@@ -115,6 +113,8 @@ final class MigrateCommand extends Command {
     }
 
 	/**
+     * Pauses script execution and waits on user input to see if any author file
+     * changes are necessary before continuing the migration.
 	 * @param InputInterface $input
 	 * @param OutputInterface $output
 	 * @return void
@@ -140,6 +140,7 @@ final class MigrateCommand extends Command {
 	}
 
     /**
+     * Deletes the duplicated trunk branch created by git-svn during the clone process.
      * @param InputInterface $input
      * @param OutputInterface $output
      * @return void
@@ -148,7 +149,7 @@ final class MigrateCommand extends Command {
         ($process = Process::fromShellCommandline(
             'git branch -d "${:PREFIX}"trunk',
             $this->getCloneCwd($input),
-            ["PREFIX" => $input->getOption("prefix") ?? "origin/"],
+            ["PREFIX" => $input->getOption("prefix")],
             null,
             null,
         ))->run();
@@ -160,6 +161,7 @@ final class MigrateCommand extends Command {
     }
 
 	/**
+     * Executes the AuthorCommand. {@see AuthorCommand::execute()}
 	 * @param InputInterface $input
 	 * @param OutputInterface $output
 	 * @return void
@@ -181,6 +183,7 @@ final class MigrateCommand extends Command {
 	}
 
 	/**
+     * Executes the CloneCommand. {@see CloneCommand::execute()}
 	 * @param InputInterface $input
 	 * @param OutputInterface $output
 	 * @return void
@@ -195,6 +198,7 @@ final class MigrateCommand extends Command {
 			"--tags"         	 => $input->getOption("tags"),
 			"--branches"     	 => $input->getOption("branches"),
 			"--include-metadata" => $input->getOption("include-metadata"),
+            "--prefix"           => $input->getOption("prefix"),
 		];
 
 		if (!empty($input->getOption("username")))
@@ -203,50 +207,41 @@ final class MigrateCommand extends Command {
 		if (file_exists($input->getOption("author-output-file")))
 			$arrayInput["--author-file"] = $input->getOption("author-output-file");
 
-		if (!is_null($input->getOption("prefix")))
-			$arrayInput["--prefix"] = $input->getOption("prefix");
-
 		$this->executeSubCommand(new ArrayInput($arrayInput), $output);
 	}
 
     /**
+     * Executes the ConvertTagsCommand. {@see ConvertTagsCommand::execute()}
      * @param InputInterface $input
      * @param OutputInterface $output
      * @return void
      * @throws Exception
      */
     private function executeConvertTagsCommand(InputInterface $input, OutputInterface $output): void {
-        $arrayInput = [
+        $this->executeSubCommand(new ArrayInput([
             "command"  => ConvertTagsCommand::getDefaultName(),
             "cwd"      => $this->getCloneCwd($input),
-        ];
-
-        if (!is_null($input->getOption("prefix")))
-            $arrayInput["--prefix"] = $input->getOption("prefix");
-
-        $this->executeSubCommand(new ArrayInput($arrayInput), $output);
+            "prefix"   => $input->getOption("prefix"),
+        ]), $output);
     }
 
 	/**
+     * Executes the ConvertBranchesCommand. {@see ConvertBranchesCommand::execute()}
 	 * @param InputInterface $input
 	 * @param OutputInterface $output
 	 * @return void
 	 * @throws Exception
 	 */
 	private function executeConvertBranchesCommand(InputInterface $input, OutputInterface $output): void {
-        $arrayInput = [
+		$this->executeSubCommand(new ArrayInput([
             "command"  => ConvertBranchesCommand::getDefaultName(),
             "cwd"      => $this->getCloneCwd($input),
-        ];
-
-        if (!is_null($input->getOption("prefix")))
-            $arrayInput["--prefix"] = $input->getOption("prefix");
-
-		$this->executeSubCommand(new ArrayInput($arrayInput), $output);
+            "prefix"   => $input->getOption("prefix"),
+        ]), $output);
 	}
 
 	/**
-	 * Executes a sub-command.
+	 * Executes a subcommand based on $input["command"].
 	 * @param ArrayInput $input
 	 * @param OutputInterface $output
 	 * @return void
