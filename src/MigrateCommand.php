@@ -23,7 +23,7 @@ use Throwable;
 
 final class MigrateCommand extends Command {
 
-	public const VERSION = "v1.0.3-alpha";
+	public const VERSION = "v1.0.4-alpha";
 
     /**
      * {@inheritdoc}
