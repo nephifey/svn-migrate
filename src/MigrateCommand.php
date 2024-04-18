@@ -221,7 +221,7 @@ final class MigrateCommand extends Command {
         $this->executeSubCommand(new ArrayInput([
             "command"  => ConvertTagsCommand::getDefaultName(),
             "cwd"      => $this->getCloneCwd($input),
-            "prefix"   => $input->getOption("prefix"),
+            "--prefix"   => $input->getOption("prefix"),
         ]), $output);
     }
 
@@ -236,7 +236,7 @@ final class MigrateCommand extends Command {
 		$this->executeSubCommand(new ArrayInput([
             "command"  => ConvertBranchesCommand::getDefaultName(),
             "cwd"      => $this->getCloneCwd($input),
-            "prefix"   => $input->getOption("prefix"),
+            "--prefix"   => $input->getOption("prefix"),
         ]), $output);
 	}
 
