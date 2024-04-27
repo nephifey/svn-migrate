@@ -19,7 +19,7 @@ final class GitSvnCloneProcess extends AbstractProcess {
     public function runProcess(): void {
         $this->migrate->getCli()->section("Migrating the repository.");
 
-        $cmd = 'git svn clone "${:SVN_REPO_URL}" --trunk="${:TRUNK}" --tags="${:TAGS}" --branches="${:BRANCHES}" --prefix="${:PREFIX}"';
+        $command = 'git svn clone "${:SVN_REPO_URL}" --trunk="${:TRUNK}" --tags="${:TAGS}" --branches="${:BRANCHES}" --prefix="${:PREFIX}"';
         $args = [
             "SVN_REPO_URL" => $this->migrate->getAnswers()->getSvnRepositoryUrl(),
             "TRUNK"        => $this->migrate->getAnswers()->getSvnTrunk(),
@@ -30,25 +30,25 @@ final class GitSvnCloneProcess extends AbstractProcess {
 
         if (file_exists((string) $this->migrate->getAuthorFilename())) {
             $args["AUTHOR_FILE"] = $this->migrate->getAuthorFilename();
-            $cmd .= ' --authors-file="${:AUTHOR_FILE}"';
+            $command .= ' --authors-file="${:AUTHOR_FILE}"';
         }
 
         if (!empty($this->migrate->getAnswers()->getSvnUsername())) {
             $args["USERNAME"] = $this->migrate->getAnswers()->getSvnUsername();
-            $cmd .= ' --username="${:USERNAME}"';
+            $command .= ' --username="${:USERNAME}"';
         }
 
         if (!$this->migrate->getAnswers()->hasMetadata()) {
-            $cmd .= " --no-metadata";
+            $command .= " --no-metadata";
         }
 
         if (!empty($this->migrate->getAnswers()->getOutputDestination())) {
             $args["OUTPUT_DEST"] = $this->migrate->getAnswers()->getOutputDestination();
-            $cmd .= ' "${:OUTPUT_DEST}"';
+            $command .= ' "${:OUTPUT_DEST}"';
         }
 
         try {
-            $process = Process::fromShellCommandline($cmd, null, $args, null, null);
+            $process = Process::fromShellCommandline($command, null, $args, null, null);
             $process->mustRun([$this->migrate, "writeCommandOutputToCli"]);
 
             $this->migrate->getCli()->info("The migration has been completed.");

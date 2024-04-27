@@ -32,6 +32,7 @@ final class BuildAuthorsFileProcess extends AbstractProcess {
         try {
             $process = Process::fromShellCommandline($command, null, $args, null, null);
             $process->mustRun();
+
             $this->buildAuthorsFile($process->getOutput());
 
             $contents = file_get_contents((string) $this->migrate->getAuthorFilename());
@@ -58,8 +59,8 @@ final class BuildAuthorsFileProcess extends AbstractProcess {
             if (!empty($authors)) {
                 $this->updateAuthorsFile($authors);
             }
-        } catch (Exception $e) {
-            throw new MigrateException($e->getMessage(), $e->getCode(), $e);
+        } catch (Exception $exception) {
+            throw new MigrateException($exception->getMessage(), $exception->getCode(), $exception);
         }
     }
 
@@ -111,7 +112,7 @@ final class BuildAuthorsFileProcess extends AbstractProcess {
 
         try {
             $process = new Process($command, null, null, null, null);
-            $process->setTty(!$this->migrate->isWindows());
+            $process->setTty(Process::isTtySupported());
             $process->mustRun();
         } catch (ProcessFailedException $exception) {
             throw new MigrateException("The '{$exception->getProcess()->getCommandLine()}' command failed.", $exception->getCode(), $exception);
