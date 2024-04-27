@@ -1,5 +1,14 @@
-#!/usr/bin/php
+#!/usr/bin/env php
 <?php
+/*
+ * This file is part of nephifey/svn-migrate.
+ *
+ * (c) Nathan Phifer <nephifer5@gmail.com>
+ *
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
+ */
+
 $autoloadFileLoaded = false;
 foreach ([__DIR__ . "/../../../autoload.php", __DIR__ . "/../vendor/autoload.php"] as $file) {
 	if (!file_exists($file))
@@ -11,15 +20,10 @@ foreach ([__DIR__ . "/../../../autoload.php", __DIR__ . "/../vendor/autoload.php
 }
 
 if (!$autoloadFileLoaded) {
-    throw new Exception("The composer autoload file was not found. Run \"composer install\" and try again.");
+    throw new Exception("The composer autoload file was not found. Run 'composer install' and try again.");
 }
 
-$application = new \Symfony\Component\Console\Application("svn-migrate", \SvnMigrate\MigrateCommand::VERSION);
-$application->addCommands([
-	new \SvnMigrate\MigrateCommand(),
-	new \SvnMigrate\Migrate\AuthorCommand(),
-	new \SvnMigrate\Migrate\CloneCommand(),
-    new \SvnMigrate\Migrate\ConvertTagsCommand(),
-    new \SvnMigrate\Migrate\ConvertBranchesCommand(),
-]);
+$application = new \Symfony\Component\Console\Application(\Nephifey\SvnMigrate\Command::getDefaultName());
+$application->add(new \Nephifey\SvnMigrate\Command());
+$application->setDefaultCommand(\Nephifey\SvnMigrate\Command::getDefaultName(), true);
 $application->run();
