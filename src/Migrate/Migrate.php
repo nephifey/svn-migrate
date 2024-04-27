@@ -64,7 +64,7 @@ final class Migrate {
         return $this->authorFile;
     }
 
-    public function getAuthorFileName(): ?string {
+    public function getAuthorFilename(): ?string {
         return $this->authorFilename;
     }
 

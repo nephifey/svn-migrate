@@ -34,7 +34,7 @@ final class BuildAuthorsFileProcess extends AbstractProcess {
             $process->mustRun();
             $this->buildAuthorsFile($process->getOutput());
 
-            $contents = file_get_contents((string) $this->migrate->getAuthorFileName());
+            $contents = file_get_contents((string) $this->migrate->getAuthorFilename());
             if (false !== $contents) {
                 $this->migrate->getCli()->write($contents);
             }
@@ -105,8 +105,8 @@ final class BuildAuthorsFileProcess extends AbstractProcess {
 
         $command = (
             "\\" === DIRECTORY_SEPARATOR
-            ? ["notepad", $this->migrate->getAuthorFileName()]
-            : ["vim", $this->migrate->getAuthorFileName()]
+            ? ["notepad", $this->migrate->getAuthorFilename()]
+            : ["vim", $this->migrate->getAuthorFilename()]
         );
 
         try {

@@ -28,8 +28,8 @@ final class GitSvnCloneProcess extends AbstractProcess {
             "PREFIX"       => $this->migrate->getAnswers()->getGitPrefix(),
         ];
 
-        if (file_exists((string) $this->migrate->getAuthorFileName())) {
-            $args["AUTHOR_FILE"] = $this->migrate->getAuthorFileName();
+        if (file_exists((string) $this->migrate->getAuthorFilename())) {
+            $args["AUTHOR_FILE"] = $this->migrate->getAuthorFilename();
             $cmd .= ' --authors-file="${:AUTHOR_FILE}"';
         }
 
