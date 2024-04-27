@@ -104,13 +104,14 @@ final class BuildAuthorsFileProcess extends AbstractProcess {
         }
 
         $command = (
-            "\\" === DIRECTORY_SEPARATOR
+            $this->migrate->isWindows()
             ? ["notepad", $this->migrate->getAuthorFilename()]
             : ["vim", $this->migrate->getAuthorFilename()]
         );
 
         try {
             $process = new Process($command, null, null, null, null);
+            $process->setTty(!$this->migrate->isWindows());
             $process->mustRun();
         } catch (ProcessFailedException $exception) {
             throw new MigrateException("The '{$exception->getProcess()->getCommandLine()}' command failed.", $exception->getCode(), $exception);

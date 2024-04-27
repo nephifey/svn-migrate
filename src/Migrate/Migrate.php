@@ -33,12 +33,15 @@ final class Migrate {
 
     private ?string $authorFilename = null;
 
+    private bool $isWindows;
+
     /**
      * @throws MigrateException
      */
     public function __construct(Answers $answers, CommandStyle $cli) {
         $this->answers = $answers;
         $this->cli = $cli;
+        $this->isWindows = ("\\" === DIRECTORY_SEPARATOR);
 
         $authorFile = tmpfile();
         if (false === $authorFile) {
@@ -66,6 +69,10 @@ final class Migrate {
 
     public function getAuthorFilename(): ?string {
         return $this->authorFilename;
+    }
+
+    public function isWindows(): bool {
+        return $this->isWindows;
     }
 
     public function resetAuthorFile(): void {
