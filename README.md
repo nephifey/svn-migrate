@@ -38,7 +38,7 @@ $ composer require nephifey/svn-migrate
 Run the below php script to kick off the migration.
 
 ```
-$ vendor /bin/svn-migrate
+$ vendor/bin/svn-migrate
 ```
 
 ## Copyright and License
