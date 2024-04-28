@@ -16,11 +16,25 @@ use SimpleXMLElement;
 use Symfony\Component\Process\Exception\ProcessFailedException;
 use Symfony\Component\Process\Process;
 
-final class BuildAuthorsFileProcess extends AbstractProcess {
+final class BuildAuthorsFileProcess extends AbstractSvnProcess {
 
-    public function runProcess(): void {
-        $this->migrate->getCli()->section("Building authors file.");
+    protected static string $sectionName = "Building authors file.";
 
+    /**
+     * @throws MigrateException
+     */
+    protected function successCallback(Process $process): void {
+        $this->buildAuthorsFile($process->getOutput());
+
+        $contents = file_get_contents((string) $this->migrate->getAuthorFilename());
+        if (false !== $contents) {
+            $this->migrate->getCli()->write($contents);
+        }
+
+        $this->migrate->getCli()->info("The authors file has been built.");
+    }
+
+    protected function buildSvnProcess(): Process {
         $command = 'svn log "${:SVN_REPO_URL}" --xml --quiet';
         $args = ["SVN_REPO_URL" => $this->migrate->getAnswers()->getSvnRepositoryUrl()];
 
@@ -29,21 +43,12 @@ final class BuildAuthorsFileProcess extends AbstractProcess {
             $command .= ' --username="${:USERNAME}"';
         }
 
-        try {
-            $process = Process::fromShellCommandline($command, null, $args, null, null);
-            $process->mustRun();
-
-            $this->buildAuthorsFile($process->getOutput());
-
-            $contents = file_get_contents((string) $this->migrate->getAuthorFilename());
-            if (false !== $contents) {
-                $this->migrate->getCli()->write($contents);
-            }
-
-            $this->migrate->getCli()->info("The authors file has been built.");
-        } catch (ProcessFailedException $exception) {
-            throw new MigrateException("The '{$exception->getProcess()->getCommandLine()}' command failed.", $exception->getCode(), $exception);
+        if (!empty($this->migrate->getAnswers()->getSvnPassword())) {
+            $args["PASSWORD"] = $this->migrate->getAnswers()->getSvnPassword();
+            $command .= ' --password="${:PASSWORD}"';
         }
+
+        return Process::fromShellCommandline($command, null, $args, $this->migrate->getAnswers()->getSvnPassword(), null);
     }
 
     /**
