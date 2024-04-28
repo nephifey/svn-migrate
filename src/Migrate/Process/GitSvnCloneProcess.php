@@ -10,15 +10,21 @@
 
 namespace Nephifey\SvnMigrate\Migrate\Process;
 
-use Nephifey\SvnMigrate\Exception\MigrateException;
-use Symfony\Component\Process\Exception\ProcessFailedException;
 use Symfony\Component\Process\Process;
 
-final class GitSvnCloneProcess extends AbstractProcess {
+final class GitSvnCloneProcess extends AbstractSvnProcess {
 
-    public function runProcess(): void {
-        $this->migrate->getCli()->section("Migrating the repository.");
+    protected static string $sectionName = "Migrating the repository.";
 
+    protected function getRunCallback(): ?callable {
+        return [$this->migrate, "writeCommandOutputToCli"];
+    }
+
+    protected function successCallback(Process $process): void {
+        $this->migrate->getCli()->info("The migration has been completed.");
+    }
+
+    protected function buildSvnProcess(): Process {
         $command = 'git svn clone "${:SVN_REPO_URL}" --trunk="${:TRUNK}" --tags="${:TAGS}" --branches="${:BRANCHES}" --prefix="${:PREFIX}"';
         $args = [
             "SVN_REPO_URL" => $this->migrate->getAnswers()->getSvnRepositoryUrl(),
@@ -28,14 +34,14 @@ final class GitSvnCloneProcess extends AbstractProcess {
             "PREFIX"       => $this->migrate->getAnswers()->getGitPrefix(),
         ];
 
-        if (file_exists((string) $this->migrate->getAuthorFilename())) {
-            $args["AUTHOR_FILE"] = $this->migrate->getAuthorFilename();
-            $command .= ' --authors-file="${:AUTHOR_FILE}"';
-        }
-
         if (!empty($this->migrate->getAnswers()->getSvnUsername())) {
             $args["USERNAME"] = $this->migrate->getAnswers()->getSvnUsername();
             $command .= ' --username="${:USERNAME}"';
+        }
+
+        if (file_exists((string) $this->migrate->getAuthorFilename())) {
+            $args["AUTHOR_FILE"] = $this->migrate->getAuthorFilename();
+            $command .= ' --authors-file="${:AUTHOR_FILE}"';
         }
 
         if (!$this->migrate->getAnswers()->hasMetadata()) {
@@ -47,13 +53,12 @@ final class GitSvnCloneProcess extends AbstractProcess {
             $command .= ' "${:OUTPUT_DEST}"';
         }
 
-        try {
-            $process = Process::fromShellCommandline($command, null, $args, null, null);
-            $process->mustRun([$this->migrate, "writeCommandOutputToCli"]);
-
-            $this->migrate->getCli()->info("The migration has been completed.");
-        } catch (ProcessFailedException $exception) {
-            throw new MigrateException("The '{$exception->getProcess()->getCommandLine()}' command failed.", $exception->getCode(), $exception);
-        }
+        return Process::fromShellCommandline(
+            $command,
+            null,
+            $args,
+            $this->migrate->getAnswers()->getSvnPassword(),
+            null,
+        );
     }
 }

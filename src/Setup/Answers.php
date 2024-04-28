@@ -22,6 +22,8 @@ final class Answers {
 
     private ?string $svnUsername = null;
 
+    private ?string $svnPassword = null;
+
     private bool $metadata = false;
 
     private string $gitPrefix = "origin/";
@@ -80,6 +82,10 @@ final class Answers {
 
     public function getSvnUsername(): ?string {
         return $this->svnUsername;
+    }
+
+    public function getSvnPassword(): ?string {
+        return $this->svnPassword;
     }
 
     public function hasMetadata(): bool {
