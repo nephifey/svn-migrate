@@ -19,6 +19,7 @@ use Nephifey\SvnMigrate\Migrate\Process\GitRemoveTrunkProcess;
 use Nephifey\SvnMigrate\Migrate\Process\GitSvnCloneProcess;
 use Nephifey\SvnMigrate\Migrate\Process\MigrateProcessInterface;
 use Nephifey\SvnMigrate\Setup\Answers;
+use Symfony\Component\Filesystem\Exception\IOException;
 
 final class Migrate {
 
@@ -26,12 +27,7 @@ final class Migrate {
 
     private CommandStyle $cli;
 
-    /**
-     * @var resource|false|null
-     */
-    private $authorFile;
-
-    private ?string $authorFilename = null;
+    private AuthorFile $authorFile;
 
     private bool $isWindows;
 
@@ -43,13 +39,11 @@ final class Migrate {
         $this->cli = $cli;
         $this->isWindows = ("\\" === DIRECTORY_SEPARATOR);
 
-        $authorFile = tmpfile();
-        if (false === $authorFile) {
-            throw new MigrateException("Could not create author file.");
+        try {
+            $this->authorFile = new AuthorFile();
+        } catch (IOException $exception) {
+            throw new MigrateException("Could not create author file.", $exception->getCode(), $exception);
         }
-
-        $this->authorFile = $authorFile;
-        $this->authorFilename = stream_get_meta_data($this->authorFile)["uri"];
     }
 
     public function getAnswers(): Answers {
@@ -60,28 +54,12 @@ final class Migrate {
         return $this->cli;
     }
 
-    /**
-     * @return resource|false|null
-     */
-    public function getAuthorFile() {
+    public function getAuthorFile(): AuthorFile {
         return $this->authorFile;
-    }
-
-    public function getAuthorFilename(): ?string {
-        return $this->authorFilename;
     }
 
     public function isWindows(): bool {
         return $this->isWindows;
-    }
-
-    public function resetAuthorFile(): void {
-        $this->authorFile = null;
-        $this->authorFilename = null;
-
-        if (is_resource($this->authorFile)) {
-            fclose($this->authorFile);
-        }
     }
 
     public function writeCommandOutputToCli(string $type, string $data): void {
@@ -95,8 +73,6 @@ final class Migrate {
         foreach ($this->getProcesses() as $process) {
             $process->runProcess();
         }
-
-        $this->resetAuthorFile();
     }
 
     /**

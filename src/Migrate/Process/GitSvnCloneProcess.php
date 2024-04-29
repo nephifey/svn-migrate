@@ -39,8 +39,8 @@ final class GitSvnCloneProcess extends AbstractSvnProcess {
             $command .= ' --username="${:USERNAME}"';
         }
 
-        if (file_exists((string) $this->migrate->getAuthorFilename())) {
-            $args["AUTHOR_FILE"] = $this->migrate->getAuthorFilename();
+        if ($this->migrate->getAuthorFile()->exists()) {
+            $args["AUTHOR_FILE"] = $this->migrate->getAuthorFile()->getName();
             $command .= ' --authors-file="${:AUTHOR_FILE}"';
         }
 
