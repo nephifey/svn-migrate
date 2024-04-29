@@ -26,7 +26,7 @@ final class BuildAuthorsFileProcess extends AbstractSvnProcess {
     protected function successCallback(Process $process): void {
         $this->buildAuthorsFile($process->getOutput());
 
-        $contents = file_get_contents((string) $this->migrate->getAuthorFilename());
+        $contents = $this->migrate->getAuthorFile()->getContents();
         if (false !== $contents) {
             $this->migrate->getCli()->write($contents);
         }
@@ -101,18 +101,21 @@ final class BuildAuthorsFileProcess extends AbstractSvnProcess {
      * @throws Exception
      */
     private function updateAuthorsFile(array $authors): void {
-        if (!is_resource($this->migrate->getAuthorFile())) {
+        if (!$this->migrate->getAuthorFile()->exists()) {
             return;
         }
 
         foreach ($authors as $author) {
-            fwrite($this->migrate->getAuthorFile(), "{$author} => {$author} <{$author}@email.com>" . PHP_EOL);
+            $this->migrate->getAuthorFile()
+                ->write("{$author} => {$author} <{$author}@email.com>" . PHP_EOL);
         }
+
+        $this->migrate->getAuthorFile()->closeStream();
 
         $command = (
             $this->migrate->isWindows()
-            ? ["notepad", $this->migrate->getAuthorFilename()]
-            : ["vim", $this->migrate->getAuthorFilename()]
+            ? ["notepad", $this->migrate->getAuthorFile()->getName()]
+            : ["vim", $this->migrate->getAuthorFile()->getName()]
         );
 
         try {
