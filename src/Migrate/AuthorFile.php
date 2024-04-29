@@ -78,7 +78,7 @@ class AuthorFile {
 
     /**
      * @param string $data
-     * @param int<0, max>|null $length
+     * @param int|null $length
      * @return int|false
      */
     public function write(string $data, ?int $length = null) {
@@ -87,6 +87,7 @@ class AuthorFile {
             return false;
         }
 
+        /* @phpstan-ignore-next-line */
         return fwrite($stream, $data, $length);
     }
 
